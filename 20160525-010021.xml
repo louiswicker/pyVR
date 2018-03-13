@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<!DOCTYPE datatable>
+
+<datatable>
+ <datatype name="MergerInputRadarsTable">
+  <stref>
+   <location>
+    <lat>
+     <angle units="Degrees" value="0.000000"/>
+    </lat>
+    <lon>
+     <angle units="Degrees" value="0.000000"/>
+    </lon>
+    <ht>
+     <length units="Meters" value="0.000000"/>
+    </ht>
+   </location>
+   <time units="secondsSinceEpoch" value="1464138021"/>
+  </stref>
+  <attr name="SubType">
+   <datacolumn name="SubType" units="dimensionless">
+    <item value="MergedVelocity"/>
+   </datacolumn>
+  </attr>
+ </datatype>
+ <data>
+  <datacolumn name="Age" units="Seconds">
+   <item value="30.046000"/>
+   <item value="12.020000"/>
+   <item value="3.004000"/>
+   <item value="15.980000"/>
+   <item value="12.615000"/>
+   <item value="25.766000"/>
+   <item value="67.335000"/>
+   <item value="0.000000"/>
+   <item value="6.587000"/>
+   <item value="4.709000"/>
+   <item value="8.190000"/>
+   <item value="4.579000"/>
+   <item value="5.463000"/>
+   <item value="33.026000"/>
+   <item value="24.813000"/>
+  </datacolumn>
+  <datacolumn name="LatestTilt" units="Degrees">
+   <item value="0.900000"/>
+   <item value="15.600000"/>
+   <item value="6.400000"/>
+   <item value="1.300000"/>
+   <item value="10.000000"/>
+   <item value="0.500000"/>
+   <item value="4.500000"/>
+   <item value="0.900000"/>
+   <item value="15.600000"/>
+   <item value="2.400000"/>
+   <item value="1.800000"/>
+   <item value="8.000000"/>
+   <item value="0.900000"/>
+   <item value="0.500000"/>
+   <item value="15.600000"/>
+  </datacolumn>
+  <datacolumn name="Latitude" units="Degrees">
+   <item value="41.957901"/>
+   <item value="36.174999"/>
+   <item value="38.996899"/>
+   <item value="36.740799"/>
+   <item value="40.320801"/>
+   <item value="35.333099"/>
+   <item value="41.320301"/>
+   <item value="38.459400"/>
+   <item value="37.654400"/>
+   <item value="39.366901"/>
+   <item value="35.233299"/>
+   <item value="37.760799"/>
+   <item value="41.151901"/>
+   <item value="34.362202"/>
+   <item value="39.786598"/>
+  </datacolumn>
+  <datacolumn name="Longitude" units="Degrees">
+   <item value="-100.576202"/>
+   <item value="-95.564102"/>
+   <item value="-96.232597"/>
+   <item value="-98.127403"/>
+   <item value="-98.441902"/>
+   <item value="-97.277802"/>
+   <item value="-96.366798"/>
+   <item value="-104.181396"/>
+   <item value="-97.443100"/>
+   <item value="-101.700302"/>
+   <item value="-101.709297"/>
+   <item value="-99.968903"/>
+   <item value="-104.806099"/>
+   <item value="-98.976700"/>
+   <item value="-104.545799"/>
+  </datacolumn>
+  <datacolumn name="RowName" units="dimensionless">
+   <item value="KLNX"/>
+   <item value="KINX"/>
+   <item value="KTWX"/>
+   <item value="KVNX"/>
+   <item value="KUEX"/>
+   <item value="KTLX"/>
+   <item value="KOAX"/>
+   <item value="KPUX"/>
+   <item value="KICT"/>
+   <item value="KGLD"/>
+   <item value="KAMA"/>
+   <item value="KDDC"/>
+   <item value="KCYS"/>
+   <item value="KFDR"/>
+   <item value="KFTG"/>
+  </datacolumn>
+  <datacolumn name="VCP" units="dimensionless">
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="32.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+   <item value="212.000000"/>
+  </datacolumn>
+ </data>
+</datatable>
