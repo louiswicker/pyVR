@@ -2,8 +2,10 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as P
 P.ioff()
+import matplotlib as mpl
 from mpl_toolkits.basemap import Basemap
-from mpl_toolkits.basemap import interp as Binterp 
+from matplotlib.patches import Rectangle
+from matplotlib.collections import PatchCollection
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -15,18 +17,22 @@ import xarray as xr
 import sys
 import pyart
 import xml.etree.ElementTree as et
-import pyresample
 import pandas as pd
 
 
-# Create uneven height bins because of MRMS and other radar scans.
-height_bins = [(0.0, 1000.), (1000., 2000.), (2000., 3000.), (3000., 4000.),
-               (4000., 6000.), (6000., 8000.), (8000.,10000.)]
+# Range rings in km
+_plot_RangeRings = True
+_range_rings = [25, 50, 75, 100, 125]
 
 # Colortables
 _vr_ctable  = pyart.graph.cm.Carbone42
 
 _file = "./20160525-010021"
+_file = "/work/anthony.reinhart/VRtest/20170516/Point/KAMA/Velocity_Threshold_cut_smoothedKAMACollection/00.50/20170516-232455.netcdf"
+_file = "/work/anthony.reinhart/VRtest/20170516/Point/KAMA/Velocity_Threshold_cut_smoothedKAMACollection/00.50/20170516-210506.netcdf"
+_file = "/work/anthony.reinhart/VRtest/20170516/Point/KAMA/Velocity_Threshold_cut_smoothedKAMACollection/00.50/20170516-210118.netcdf"
+_file = "/work/wicker/realtime/Point/KFDR/Velocity_Threshold_cut_smoothed_Collection/00.50/20170516-233037.netcdf"
+_file = "/work/anthony.reinhart/VRtest/20170516/Point/KAMA/Velocity_Threshold_cut_smoothed_Collection/00.50/20170516-210118.netcdf"
 
 radars = []
 lats   = []
@@ -203,47 +209,64 @@ def mymap(xwidth, ywidth, cntr_lat, cntr_lon, scale = 1.0, ax = None, ticks = Tr
     return map
 
 #===============================================================================
-def plot_contour(fld, xwidth, ywidth, title = None, cntr_lat=None, cntr_lon=None, 
-                 clevels = None, ctables = None, ax = None, mask = None, map = None):
+def plot_rectangles(fld, xp, yp, title = None, cntr_lat=None, cntr_lon=None, 
+                    c_width=2500., ctables=None, norm=None, ax=None, fig=None):
                
-    if map == None:
-       map = mymap(xwidth, ywidth, cntr_lat, cntr_lon, ax = ax)
-    
-    if clevels == None:
-        _, _, _, clevels = nice_clevels( fld.min(), fld.max() )
-        
     if ctables == None:
         ctables = P.cm.viridis
         
     if title == None:
         title = "No Title"
+
+    if norm == None:
+        norm = [fld.min(), fld.max()]
         
-    if mask == None:
-        fld2d = fld
-    else:
-        fld2d = np.ma.masked_where(mask, fld)
-     
-# get coordinates for contour plots
+      
+    Fnorm = mpl.colors.Normalize(vmin=norm[0], vmax=norm[1], clip=True)
+    # Here's where you have to make a ScalarMappable with the colormap
+    mappable = P.cm.ScalarMappable(norm=Fnorm, cmap=ctables)
+    
+    # normalize the data for the colormapping
+    colors_norm = fld/(norm[1]-norm[0])
+    
+    # Give it your non-normalized color data
+    mappable.set_array(fld)
 
-    lon2d, lat2d, xx, yy = map.makegrid(fld.shape[0], fld.shape[1], returnxy=True)
+    rects = []
+    for p in zip(xp, yp):
+        xpos = p[0] - c_width/2 # The x position will be half the width from the center
+        ypos = p[1] - c_width/2 # same for the y position, but with height
+        rect = Rectangle( (xpos, ypos), c_width, c_width ) # Create a rectangle
+        rects.append(rect) # Add the rectangle patch to our list
 
-    plot    = map.contourf(xx, yy, fld2d, clevels, cmap= ctables)
-    cbar    = map.colorbar(plot, location='right',pad="5%")
-    plot    = map.contour(xx, yy,  fld2d, clevels[::2], colors='k', linewidths=0.5)
+    # Create a collection from the rectangles
+    col = PatchCollection(rects)
+    
+    # set the alpha for all rectangles
+    col.set_alpha(0.8)
+    
+    # Set the colors using the colormap
+    col.set_facecolor( ctables(colors_norm) )
+    
+    # create figure if fig == None
+    if fig == None:
+        fig = plt.figure()
+        
+    if ax == None:
+        ax = fig.add_subplot(111)
+
+    # plot collection of rectangles
+    ax.add_collection(col)    
+    # add a colorbar
+    P.colorbar(mappable)
     
     P.title(title, fontsize=10)
-# 
-#     at = AnchoredText("Max: %4.1f \n Min: %4.1f" % (fld.max(),fld.min()), 
-#                       loc=4, prop=dict(size=6), frameon=True,)            
-#     at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
-#                       
-#     ax.add_artist(at)
 
-    return map
+    return
     
 #-------------------------------------------------------------------------------
 #
-def read_MRMS_VR_XML(filename):
+def read_Merged_Radar_Table(filename):
 
     if filename[-3:] != 'xml':  filename = "%s.xml" % filename
 
@@ -273,54 +296,43 @@ def read_MRMS_VR_NCDF(filename, retFileAttr = False):
 
     if filename[-6:] != 'netcdf':  filename = "%s.netcdf" % filename
 
-    if retFileAttr == False:
-        return xr.open_dataset(filename).to_dataframe()
-    else:
-        xa = xr.open_dataset(filename)
-        return xa.to_dataframe(), xa.attrs
-
+    try:
+        if retFileAttr == False:
+            return xr.open_dataset(filename).to_dataframe()
+        else:
+            xa = xr.open_dataset(filename)
+            return xa.to_dataframe(), xa.attrs
+    except:
+        print(" read_MRMS_VR_NCDF:  cannot read data file, return None\n")
+        sys.exit(1)
 
 #-------------------------------------------------------------------------------
 #
-def vr_bin(df, height=None, threshold=None, radar=None):
-
-
-    vr  = []
-    lat = []
-    lon = []
-    hgt = []
-    rad = []
+def vr_filter(df, missing = -999.0):
 
     # This string is used to bin data in height
-    query_string = '%f < heights <= %f' % (height[0], height[1])
-
-    if radar:
-        radar_string = "i == %d" % radar
-        query_string = "%s & %s" % (query_string, radar_string)
-        
-#     print query_string
-
+    query_string = 'vr > %f' % (missing+1.0)
     # Create coordinate list for heights
-    
+
     new_df = df.query(query_string)
     
-    new_df.rename(columns={'v': 'vr', 'lats': 'lat', 'lons': 'lon', 'heights': 'hgt',
+    new_df.rename(columns={'v': 'vr', 'height': 'hgt', 
                            'xOverR': 'xR', 'yOverR': 'yR', 'zOverR': 'zR'}, inplace=True)
 
-    return new_df.sort_values(by=['lat', 'lon'])
+    return new_df.sort_values(by=['lon', 'lat'])
 
 #-------------------------------------------------------------------------------
 #
 # Main
 #
 
-fig, axes = P.subplots(1, 2, sharey=True, figsize=(20,8))
+fig = P.figure(figsize=(10,8))
 
-radar = 'KDDC'
-vr_table = read_MRMS_VR_XML(_file)
-vr_obs   = read_MRMS_VR_NCDF(_file)
+ax = fig.add_subplot(111)
 
-data = vr_bin(vr_obs, height=(1000.,2000.), radar=vr_table['KDDC'][0])
+vr_obs, vr_attrs   = read_MRMS_VR_NCDF(_file, retFileAttr=True)
+
+data = vr_filter(vr_obs, missing=vr_attrs['MissingData'])
 
 xR = data['xR'].values
 yR = data['yR'].values
@@ -328,74 +340,39 @@ zR = data['zR'].values
 
 mag = xR**2 + yR**2 + zR**2
 
-print mag.max(), mag.min()
+print "Checking vector magnitude: ",mag.max(), mag.min()
 
-bmap = mymap(300000., 300000., vr_table['KDDC'][1], vr_table['KDDC'][2], ax=axes[0])
+rlat = np.float(vr_attrs['Latitude'])
+rlon = np.float(vr_attrs['Longitude'])
 
-xpts,ypts = bmap(data['lon'].values,data['lat'].values)
-radar_x, radar_y = bmap(vr_table['KDDC'][2], vr_table['KDDC'][1])
+print "Radar lat/lon:  ", rlat, rlon
 
-bs = bmap.scatter(xpts,ypts,c=data['vr'].values, vmin=-30., vmax=30., cmap=_vr_ctable, s=10)
-cbar = bmap.colorbar(bs, location='right',pad="5%")
+bmap = mymap(300000., 300000., rlat, rlon, ax = ax)
+
+xpts, ypts = bmap(data['lon'].values,data['lat'].values)
+vr_data = data['vr'].values
+main_title = ("Radar: %s   Min Vr: %3.1f km   Max Vr:  %3.1f km" % ('KAMA', vr_data.min(), vr_data.max()))
+
+plot_rectangles(vr_data, xpts, ypts, title=main_title, c_width=2500., \
+                ctables = _vr_ctable, norm=[-25.,25], ax=ax, fig=fig)
+
+# plot scatter points
+# bs = bmap.scatter(xpts,ypts,c=data['vr'].values, vmin=-30., vmax=30., cmap=_vr_ctable, s=10)
+# cbar = bmap.colorbar(bs, location='right',pad="5%")
+# 
+# # plot radar loc
+radar_x, radar_y = bmap(rlon, rlat)
+# print "Radar x, Radar y: " , radar_x, radar_y
 bmap.scatter(radar_x, radar_y, s=50, c='k')
-P.title("Radar: %s   Min Hgt: %3.1f km   Max Hgt:  %3.1f km" % (radar, 0.001*data['hgt'].min(), 0.001*data['hgt'].max()))
+# P.title("Radar: %s   Min Hgt: %3.1f km   Max Hgt:  %3.1f km" % ('KAMA', 0.001*data['hgt'].min(), 0.001*data['hgt'].max()))
 
-#P.savefig('scattterPlot.png',dpi=300)
-
-
-xg, yg = 5000.*np.arange(60), 5000.*np.arange(60)
-lons,lats = bmap(xg, yg, inverse=True)
-glons, glats = np.meshgrid(lons,lats)
-
-dd = data['vr'].values
-dx = data['lon'].values
-dy = data['lat'].values
-
-grid_vr = np.array((60,60))
-
-grid  = pyresample.geometry.GridDefinition(lats=glats, lons=glons)
-swath = pyresample.geometry.SwathDefinition(lons=dx, lats=dy)
-
-wf = lambda r: 1/r**2
-
-grid_vr = pyresample.kd_tree.resample_custom(swath, dd, grid, radius_of_influence=10000, neighbours=10,
-         weight_funcs = wf, fill_value=None)
-
-_, _, _, clevels = nice_clevels( -30., 30., cint=5.0)
-
-ret = plot_contour(grid_vr, 300000., 300000., cntr_lat=vr_table['KDDC'][1], cntr_lon=vr_table['KDDC'][2], 
-                   ax=axes[1], clevels = clevels, ctables=_vr_ctable, title ="VR Map")
-ret.scatter(radar_x, radar_y, s=50, c='k')
-
-P.savefig('contourPlot.png',dpi=300)
-
-# Some checks on the data set
-
-# Lambert conformal defaults
-#tlat1 = 35.3500
-#tlat2 = 35.8900
-
-#radar_lon = radar.longitude['data'][0]
-#radar_lat = radar.latitude['data'][0]
-
-#   p1 = Proj(proj='lcc', ellps='WGS84', datum='WGS84', lat_1=tlat1, lat_2=tlat2, lon_0=radar_lon)
-#
-#   x_offset, y_offset = p1(radar_lon, radar_lat)
-#
-#   x = xr + x_offset
-#   y = yr + y_offset
-#
-#   lon, lat = p1(x, y, inverse=True)
+if _plot_RangeRings:
+  angle = np.linspace(0., 2.0 * np.pi, 360)
+  for ring in _range_rings:
+     xpts = radar_x + ring * 1000. * np.sin(angle)
+     ypts = radar_y + ring * 1000. * np.cos(angle)
+     bmap.plot(xpts, ypts, color = 'gray', alpha = 0.5, linewidth = 1.0)
 
 
+P.savefig("ScatterPlotTest.png")
 
-
-# fig, axes = P.subplots(2, 2, sharey=True, figsize=(15,15))
-# 
-# axes = axes.flatten()
-# 
-# for m in np.arange(4):
-#     n = 1 + m
-#     axes[m].scatter(data['lon'][n],data['lat'][n],c=data['vr'][n], vmin=-30., vmax=30., cmap=_vr_ctable, s=10)
-#     axes[m].set_title("Avg Height:  %3.1f km / Std:  %3.1f km" % (0.001*data['hgt'][n].mean(), 0.001*data['hgt'][n].std()))
-#     axes[m].scatter(vr_table['KDDC'][2], vr_table['KDDC'][1], s=50, c='k')
