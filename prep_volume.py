@@ -304,10 +304,10 @@ def write_DART_ascii_vr(obs, dtime, filename=None, obs_error=None):
   
    print("\n Writing %s to file...." % filename)
    
-   data       = obs['vr'].values
-   lats       = np.radians(obs['lat'].values)
-   lons       = np.radians(obs['lon'].values)
-   hgts       = obs['hgt'].values 
+   data       = obs.vr.values
+   lats       = np.radians(obs.lat.values)
+   lons       = np.radians(obs.lon.values)
+   hgts       = obs.hgt.values 
    vert_coord = 3
    kind       = ObType_LookUp("VELOCITY")
 
@@ -325,8 +325,7 @@ def write_DART_ascii_vr(obs, dtime, filename=None, obs_error=None):
    days    = day_utime.date2num(dtime)
    seconds = np.int(86400.*(days - np.floor(days)))
   
-   data_length = data.size
-   print("\n Number of good observations:  %d" % data_length)
+   print("\n Number of good observations:  %d" % data.shape[0])
 
 # Loop over 1D arrays of data
  
@@ -344,7 +343,7 @@ def write_DART_ascii_vr(obs, dtime, filename=None, obs_error=None):
             
        if nobs == 1: 
            fi.write(" %d %d %d\n" % (-1, nobs+1, -1) ) # First obs.
-       elif nobs == data_length:
+       elif nobs == data.shape[0]:
            fi.write(" %d %d %d\n" % (nobs-1, -1, -1) ) # Last obs.
        else:
            fi.write(" %d %d %d\n" % (nobs-1, nobs+1, -1) ) 
@@ -374,13 +373,13 @@ def write_DART_ascii_vr(obs, dtime, filename=None, obs_error=None):
       
        if kind == ObType_LookUp("VR"):
           
-           platform_dir1 = obs['xR'].values[k]
-           platform_dir2 = obs['yR'].values[k]
-           platform_dir3 = obs['zR'].values[k]
+           platform_dir1 = obs.xR.values[k]
+           platform_dir2 = obs.yR.values[k]
+           platform_dir3 = obs.zR.values[k]
               
-           platform_lat = np.radians(obs['radarLat'].values[0])
-           platform_lon = np.radians(obs['radarLon'].values[0])
-           platform_hgt = obs['radarHeight'].values[0]
+           platform_lat = np.radians(obs.radarLat.values[0])
+           platform_lon = np.radians(obs.radarLon.values[0])
+           platform_hgt = obs.radarHeight.values[0]
               
            fi.write("platform\n")
            fi.write("loc3d\n")
@@ -614,13 +613,6 @@ def main(argv=None):
        print
        sys.exit(1)
             
-   if options.plot < 0:
-       plot_grid_flag = False
-   else:
-       sweep_num = options.plot
-       plot_grid_flag = True
-       plot_filename = None
-
    if options.realtime != None:
        year   = int(options.realtime[0:4])
        mon    = int(options.realtime[4:6])
@@ -674,13 +666,13 @@ def main(argv=None):
    for n, file in enumerate(in_filenames):
                   
        vr_raw, vr_attrs = read_MRMS_VR_NCDF(file, retFileAttr=True)
-
+       
        vr_obs = vr_filter(vr_raw, query_string = ('vr > %f' % (vr_attrs['MissingData']+1.0)))
 
        dataset.append(vr_obs)
       
-       if plot_grid_flag and n == 0:
-           radar_name = vr_obs['radarName'].values[0]
+       if options.plot and n == 0:
+           radar_name = vr_obs.radarName.values[0]
            fsuffix = "MRMS_VR_%s_%s" % (radar_name,a_time.strftime('%Y%m%d%H%M'))
            plot_filename = os.path.join(options.out_dir, fsuffix)
            plot_vr(vr_obs, vr_attrs, in_filenames[n][-28:-23], plot_filename = plot_filename)
@@ -715,8 +707,7 @@ def main(argv=None):
    fnc.close()
    
    if options.write == True and options.combine == False:      
-       ret = write_DART_ascii_vr(vr_obs, a_time, filename=out_filename, obs_error=_vr_obs_error)
-
+       ret = write_DART_ascii_vr(xa, a_time, filename=out_filename, obs_error=_vr_obs_error)
 
    end_time = timeit.time()
 
