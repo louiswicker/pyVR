@@ -673,7 +673,7 @@ def main(argv=None):
       
        if options.plot and n == 0:
            radar_name = vr_obs.radarName.values[0]
-           fsuffix = "MRMS_VR_%s_%s" % (radar_name,a_time.strftime('%Y%m%d%H%M'))
+           fsuffix = "VR-MRMS_%s_%s" % (radar_name,a_time.strftime('%Y%m%d%H%M'))
            plot_filename = os.path.join(options.out_dir, fsuffix)
            plot_vr(vr_obs, vr_attrs, in_filenames[n][-28:-23], plot_filename = plot_filename)
 

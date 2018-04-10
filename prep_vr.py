@@ -513,9 +513,6 @@ def main(argv=None):
    end_time = timeit.time()
 
    print("\n Total radar site procesing took {0} seconds \n".format(end_time - begin_time))
-
-
-
     
 #-------------------------------------------------------------------------------
 # Main program for testing...

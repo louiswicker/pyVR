@@ -8,17 +8,17 @@ import datetime
 import glob
 
 #_VR_feed         = "/work/LDM/MRMS"
-_VR_feed         = "/work/wicker/REALTIME/Point"
+_VR_feed         = "/work/anthony.reinhart/VRtest/20170516/Point"
 #_VR_obs_seq      = "/work/wicker/REALTIME/"
-_VR_obs_seq      = "/work/wicker/REALTIME/pyVr/16May_test"
+_VR_obs_seq      = "/work/wicker/REALTIME/pyVr/"
 _NEWSe_grid_info = "/scratch/wof/realtime/radar_files"
-_prep_volume     = "/work/wicker/realtime/pyroth/prep_volume.py"
-_prep_vr         = "/work/wicker/realtime/pyroth/prep_vr.py"
+_prep_volume     = "/work/wicker/REALTIME/pyVr/prep_volume.py"
+_prep_vr         = "/work/wicker/REALTIME/pyVr/prep_vr.py"
 
 year       = 2017
 mon        = 5
-day        = [16, 16]   # start and stop days
-hour       = [20, 22]    # start and stop hours
+day        = [16, 17]   # start and stop days
+hour       = [18, 03]    # start and stop hours
 min        = [0, 0]
 
 start_time = datetime.datetime(year, mon, day[0], hour[0], min[0], 0)
@@ -60,22 +60,35 @@ while start_time < stop_time:
     VR_dirs = glob.glob("%s/K*" % _VR_feed)
     print VR_dirs
     
-# Process individual files
-    for dir in VR_dirs[0:2]:
+# Process individual radars
+    for dir in VR_dirs:
        print("\n Reading from VR directory:  %s\n" % dir)
     
        print("\n >>>>=======BEGIN===============================================================")
-       cmd = "%s -d %s -w -o %s --realtime %s " % (_prep_volume, dir, obs_seq_out_dir, start_time.strftime("%Y%m%d%H%M"))
+       cmd = "%s -d %s -o %s --realtime %s -p" % (_prep_volume, dir, obs_seq_out_dir, start_time.strftime("%Y%m%d%H%M"))
 
        print("\n Prep_VOLUME called at %s" % (time.strftime("%Y-%m-%d %H:%M:%S")))
        print(" Cmd: %s" % (cmd))
-       #ret = os.system("%s" % cmd)
-       ret = 0
+       ret = os.system("%s" % cmd)
        if ret != 0:
            print("\n ============================================================================")
            print("\n Prep_VOLUME cannot find a RF file between [-2,+1] min of %s" % start_time.strftime("%Y%m%d%H%M"))
            print("\n ============================================================================")
        print("\n <<<<<=======END================================================================")
+
+# Combine all the radars together
+    print("\n >>>>=======BEGIN===============================================================")
+    cmd = "%s -d %s -o %s --realtime %s --write " % (_prep_vr, obs_seq_out_dir, obs_seq_out_dir, start_time.strftime("%Y%m%d%H%M"))
+
+    print("\n Prep_VR called at %s" % (time.strftime("%Y-%m-%d %H:%M:%S")))
+    print(" Cmd: %s" % (cmd))
+    ret = os.system("%s" % cmd)
+    if ret != 0:
+        print("\n ============================================================================")
+        print("\n Prep_VR cannot find a RF file between [-2,+1] min of %s" % start_time.strftime("%Y%m%d%H%M"))
+        print("\n ============================================================================")
+    print("\n <<<<<=======END================================================================")
+
 
     start_time = start_time + dtime
 
