@@ -48,11 +48,12 @@ _plot_counties = True
 _vel_scale   = [-30., 30.]
 _plot_type   = 'png'
 _vel_ctable  = cm.Carbone42
+pixel_size   = 5
 
 # Range rings in km
 _range_rings = [25, 50, 75, 100, 125]
 
-_vr_subdir_name = "Velocity_Threshold_cut_smoothed_Collection"
+_vr_subdir_name = "Velocity_Threshold_cut_smoothed_GridFiltered"
 
 # time in seconds for radar window
 
@@ -138,9 +139,10 @@ def Get_Closest_Elevations(path, anal_time, sub_dir=None, window=_dt_window):
 
        
    if len(ObsFileList) > 0:
-       print(" Get_Closest_Elevations:  found %i files in %s  \n" % (len(ObsFileList), path))
+       print("\n ============================================================================\n")
+       print("\n PREP_VOLUME.Get_Closest_Elevations:  found %i files in %s  \n" % (len(ObsFileList), path))
    else:
-       print(" Get_Closest_Elevations:  No obs found \n")
+       print("\n PREP_VOLUME.Get_Closest_Elevations:  No obs found \n")
 
    # Handy sort command that will give me the the lowest tilts first....       
    ObsFileList.sort(key=lambda f: int(filter(str.isdigit, f)))
@@ -554,7 +556,7 @@ def plot_vr(data, attrs, tilt, plot_filename=None, ctables=_vel_ctable, fig=None
               % (radar_name, tilt, vr_data.min(), vr_data.max()))
               
    # plot scatter points
-   bs   = bmap.scatter(xpts,ypts,c=vr_data, vmin=_vel_scale[0], vmax=_vel_scale[1], cmap=ctables, s=15)
+   bs   = bmap.scatter(xpts,ypts,c=vr_data, vmin=_vel_scale[0], vmax=_vel_scale[1], cmap=ctables, s=pixel_size)
    cbar = bmap.colorbar(bs, location='right',pad="5%")
     
    # plot radar loc
@@ -632,10 +634,10 @@ def main(argv=None):
  
    if not os.path.exists(options.out_dir):
        try:
-           os.mkdir(options.out_dir)
+           os.makedirs(options.out_dir)
        except:
            print("\n**********************   FATAL ERROR!!  ************************************")
-           print("\n PREP_VR:  Cannot create output dir:  %s\n" % options.out_dir)
+           print("\n PREP_VOLUME:  Cannot create output dir:  %s\n" % options.out_dir)
            print("\n**********************   FATAL ERROR!!  ************************************")      
             
 #-------------------------------------------------------------------------------
@@ -645,19 +647,20 @@ def main(argv=None):
        in_filenames = Get_Closest_Elevations(options.dir,a_time, sub_dir=_vr_subdir_name)
 
        try:
-           print("\n Prep_VRs:  First file is %s\n" % (in_filenames[0]))
+           print("\n ============================================================================\n")
+           print("\n PREP_VOLUME:  First file is %s\n" % (in_filenames[0]))
            rlt_filename = "%s_%s_%s" % ("obs_seq_VR", options.dir[-4:], a_time.strftime("%Y%m%d%H%M"))
        except:
-           print("\n============================================================================")
-           print("\n Prep_VR cannot find a VR file between [%2.2d,%2.2d] seconds of %s, exiting" % 
+           print("\n ============================================================================")
+           print("\n PREP_VOLUME cannot find a VR file between [%2.2d,%2.2d] seconds of %s, exiting" % 
                 (_dtime_window[0], _dtime_window[1], a_time.strftime("%Y%m%d%H%M")))
-           print("\n============================================================================")
+           print("\n ============================================================================")
            sys.exit(1)
 
 #-------------------------------------------------------------------------------
    out_filename = os.path.join(options.out_dir, rlt_filename)
    time         = a_time
-   print(" Out filename:  %s\n" % out_filename)
+   print("\n PREP_VOLUME:  netCDF output filename:  %s\n" % out_filename)
 
    dataset = []
 
@@ -669,9 +672,10 @@ def main(argv=None):
        
        vr_obs = vr_filter(vr_raw, query_string = ('vr > %f' % (vr_attrs['MissingData']+1.0)))
 
-       dataset.append(vr_obs)
+       if len(vr_obs.vr.values) > 0:
+           dataset.append(vr_obs)
       
-       if options.plot and n == 0:
+       if options.plot and n == 0 and len(vr_obs.vr.values) > 0:
            radar_name = vr_obs.radarName.values[0]
            fsuffix = "VR-MRMS_%s_%s" % (radar_name,a_time.strftime('%Y%m%d%H%M'))
            plot_filename = os.path.join(options.out_dir, fsuffix)
@@ -683,7 +687,14 @@ def main(argv=None):
 
    # Concat the obs_seq files together
 
-   a = pd.concat(dataset, ignore_index=True)
+   if len(dataset) == 0:
+       print("\n ============================================================================\n")
+       print("\n PREP_VOLUME: There are no tilts found....exiting program...\n")
+       print("\n ============================================================================")
+       sys.exit(0)
+
+   if len(dataset) > 0:
+       a = pd.concat(dataset, ignore_index=True)
 
    # Create an xarray dataset for file I/O
    xa = xr.Dataset(a)
@@ -712,9 +723,6 @@ def main(argv=None):
    end_time = timeit.time()
 
    print("\n Total radar site procesing took {0} seconds \n".format(end_time - begin_time))
-
-
-
     
 #-------------------------------------------------------------------------------
 # Main program for testing...

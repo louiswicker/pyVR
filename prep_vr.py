@@ -455,21 +455,20 @@ def main(argv=None):
        in_filenames = glob.glob(suffix)
        
        print in_filenames
-       
 
        try:
-           print("\n Prep_VRs:  First file is %s\n" % (in_filenames[0]))
+           print("\n PREP_VR:  First file is %s\n" % (in_filenames[0]))
            rlt_filename = "%s_%s" % ("obs_seq_VR", a_time.strftime("%Y%m%d%H%M"))
        except:
-           print("\n============================================================================")
-           print("\n Prep_VR cannot find a radar VR file in %s" % options.dir)
+           print("\n============================================================================\n")
+           print("\n PREP_VR cannot find a radar VR file in %s\n" % options.dir)
            print("\n============================================================================")
            sys.exit(1)
 
 #-------------------------------------------------------------------------------
    out_filename = os.path.join(options.out_dir, rlt_filename)
    time         = a_time
-   print(" Out filename:  %s\n" % out_filename)
+   print("\n PREP_VOLUME:  netCDF output filename:  %s\n" % out_filename)
 
    dataset = []
 
@@ -487,7 +486,14 @@ def main(argv=None):
 
    # Concat the obs_seq files together
 
-   a = pd.concat(dataset, ignore_index=True)
+   if len(dataset) == 0:
+       print("\n ============================================================================\n")
+       print("\n PREP_VR: There are no valid netcdf files found....exiting program...\n")
+       print("\n ============================================================================")
+       sys.exit(0)
+
+   if len(dataset) > 0:
+       a = pd.concat(dataset, ignore_index=True)
 
    # Create an xarray dataset for file I/O
    xa = xr.Dataset(a)
