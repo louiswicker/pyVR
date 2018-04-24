@@ -100,7 +100,9 @@ def Get_Closest_Elevations(path, anal_time, sub_dir=None, window=_dt_window):
           sub_dir:    In case the radar tilts are written one more layer
                       down (MRMS likes to do this), e.g., the tilts are located
                       in a directory like:  .../KAMA/Velocity_Threshold_cut_smoothed_Collection"
-          window:     tuple of 2 integers which form the window to search in.
+          window:     len(window) == 1:  this is the window +/- of the analysis time.
+                      len(window) == 2:  the window uses analysis_time + window[0] --> analysis_time + window[1]
+                                         Note that window[0] should equal to or less than zero.
           
           RETURNS:    either an empty list, or a list with full path names of the 
                       radar's tilts that are within the supplied window.
@@ -112,6 +114,13 @@ def Get_Closest_Elevations(path, anal_time, sub_dir=None, window=_dt_window):
        full_path = os.path.join(path, sub_dir)
    else:
        full_path = path
+
+   if len(window) == 1:
+       lwindow = [-window, window]
+   else:
+       if window[0] > 0:  # this is when I am stupid...
+           window[0] = -window[0]
+       lwindow = window
    
    for elev in os.listdir(full_path):
    
@@ -126,7 +135,7 @@ def Get_Closest_Elevations(path, anal_time, sub_dir=None, window=_dt_window):
            # Change this if you want +something -window instead of 0-900. if statement is +2-15
            # if timediff >= datetime.timedelta(0,-120) and timediff < datetime.timedelta(0,window):
 
-           if timediff >= dtime.timedelta(0,window[0]) and timediff < dtime.timedelta(0,window[1]):
+           if timediff >= dtime.timedelta(0,lwindow[0]) and timediff < dtime.timedelta(0,lwindow[1]):
                tilt_time["%s/%s" % (elev,fn)] = timediff
            else:
                continue
@@ -644,7 +653,7 @@ def main(argv=None):
 #
    if options.realtime != None:
    
-       in_filenames = Get_Closest_Elevations(options.dir,a_time, sub_dir=_vr_subdir_name)
+       in_filenames = Get_Closest_Elevations(options.dir, a_time, sub_dir=_vr_subdir_name)
 
        try:
            print("\n ============================================================================\n")
